@@ -28,9 +28,17 @@ That inversion changes everything downstream:
 
 - Architecture and subsystem responsibilities
 - Design decisions and their rationale
-- Patterns that code must follow (enforced via `/dev` and `/deep-review`)
+- How pieces fit together and what each subsystem owns
 
-Both are written in present tense, as if the feature already works. "The billing page shows the current plan and usage." Not "We will add a billing page." Present tense forces clarity: either the doc describes real behavior, or it doesn't, and you notice the gap.
+**Pattern docs (`docs/technical/patterns/`)** describe how the code must be written:
+
+- MUST/NEVER rules (hard constraints — break one and `/deep-review` flags a failure)
+- SHOULD/PREFER rules (soft preferences with documented exceptions)
+- Canonical examples and anti-patterns that pin each rule down
+
+Patterns are enforced — `/dev` reads them before writing code, and `/deep-review` checks the diff against them. They are the third leg of the source-of-truth stool and get their own section below.
+
+Product and technical docs are written in present tense, as if the feature already works. "The billing page shows the current plan and usage." Not "We will add a billing page." Present tense forces clarity: either the doc describes real behavior, or it doesn't, and you notice the gap.
 
 ### What does NOT live in the docs
 
@@ -83,6 +91,23 @@ For each gap, decide: update code, update docs, or accept as intentional. `/rese
 
 Then you go back to step 1 for the next change.
 
+## Patterns: the quality floor
+
+Product docs say what exists. Technical docs say how it's built. Patterns say how it's written.
+
+Patterns live at `docs/technical/patterns/` as a tree of rule docs, each describing one constraint the code must obey. Each rule uses **MUST** and **NEVER** for hard constraints and **SHOULD** or **PREFER** for softer preferences. Canonical examples and anti-patterns pin each rule down so neither you nor the agent can wiggle out of it.
+
+Patterns are enforced at two points in the loop:
+
+- **`/dev`** reads the relevant patterns before writing code. If a pattern says "never use enums," `/dev` won't emit enums.
+- **`/deep-review`** checks the diff against the patterns. If an enum slipped in anyway, the review flags it.
+
+This is the mechanism behind the "you don't need to read the code" claim in the next section. Without patterns, that claim would be wishful thinking — the agent would produce whatever felt natural in the moment, and quality would drift toward whatever the LLM happened to write that day. Patterns are what keep the floor high.
+
+Patterns grow over time. A new project might start with a dozen: `no let, only const`; `no enums`; `validate external input with zod`; `never catch-and-log`. A mature codebase can easily accumulate sixty-plus pattern docs containing several hundred MUST/NEVER statements, covering everything from code style to architectural boundaries to observability conventions. For reference, one mature project running on this methodology has ~60 pattern files and 400+ MUST/NEVER rules — that's what "high code quality under vibe coding" looks like at scale.
+
+Your code quality ends up equal to the quality and coverage of your patterns. Keep writing them down as you discover them — via `/pattern-author` — and the agent gets sharper every cycle.
+
 ## Doc-only mode
 
 You don't have to write code to make progress.
@@ -111,7 +136,9 @@ You can run this chain with minimal code reading. You're signing off on whether 
 
 ## You may not need to read the code
 
-If the docs are thorough and the loop has run, most of the time you can evaluate the system by:
+**This only works because of patterns.** Without the discipline described above, generated code would drift toward mediocre-by-default, and the claim that you don't need to read it would be fantasy. With patterns enforcing a quality floor and `/deep-review` catching violations, the claim becomes real.
+
+If the docs are thorough, the patterns are real, and the loop has run, most of the time you can evaluate the system by:
 
 - **Asking questions of it through Claude** — "how does X work?" The agent reads the docs and answers.
 - **Running the application and using it** — the most direct check.

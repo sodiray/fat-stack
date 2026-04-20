@@ -16,7 +16,7 @@ Every change follows the same six steps:
 2. **Write technical docs** (`/eng` + `/technical-author`) — how it works; architecture, decisions, rationale.
 3. **Plan** (`/improve-plan`) — derive a concrete implementation plan from the docs.
 4. **Implement** (`/dev`) — Claude writes the code from the docs and patterns.
-5. **Gap analysis** (`/deep-review`) — find where the code disagrees with the docs.
+5. **Gap analysis** (`/deep-review`) — find where the code disagrees with the docs and patterns.
 6. **Reconcile** (`/research-gaps`) — close each gap by updating code, updating docs, or accepting the drift intentionally.
 
 Then back to step 1 for the next change.
@@ -28,6 +28,19 @@ Then back to step 1 for the next change.
 - **An agent that actually knows your project.** Because the docs are ground truth, Claude can answer questions about your system without guessing or grepping.
 - **Drift you can see.** Gap analysis is a dedicated step. You don't hope the docs match reality — you check, and close the gap each iteration.
 - **Time on decisions, not keystrokes.** You're deciding what the product does and how it should work. Claude is writing and reviewing. You approve the gaps.
+
+## Strong opinions
+
+fat-stack assumes you're committing to:
+
+- **Claude Code as the environment.** The skills are Claude Code slash commands — no Claude Code, no fat-stack.
+- **A `docs/` tree split into `product/` and `technical/`.** This is where the source of truth lives. `technical/` contains architecture docs and a `patterns/` subdirectory.
+- **[fat-docs](https://github.com/rayepps/fat-docs) for semantic search over docs.** The docs tree is too large to grep effectively; semantic search is how the agent finds the right files. `fat-stack init` wires it in.
+- **Patterns as a load-bearing discipline.** `docs/technical/patterns/` holds MUST/NEVER/SHOULD rules. `/dev` reads them before writing code; `/deep-review` checks implementation against them. Patterns are what makes "you don't need to read the code" actually true — without them, generated code drifts to mediocre-by-default. A mature codebase can easily accumulate 60+ pattern files and 400+ MUST/NEVER rules.
+- **Docs as forward-looking truth.** No plans, migrations, or TODOs in `docs/product/` or `docs/technical/`.
+- **Gap analysis isn't optional.** Skipping `/deep-review` is how docs and code drift apart.
+
+If any of these aren't a fit, fat-stack probably isn't for you. Reasoning behind each: [`docs/methodology.md`](./docs/methodology.md).
 
 ## Try it
 
