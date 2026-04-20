@@ -12,12 +12,33 @@ const PKG_ROOT = resolve(HERE, '..')
 const PKG = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8'))
 
 const HOME = homedir()
-const CLAUDE_DIR = join(HOME, '.claude')
-const CLAUDE_COMMANDS = join(CLAUDE_DIR, 'commands')
-const FAT_STATE = join(HOME, '.fat-stack')
-const MANIFEST_PATH = join(FAT_STATE, 'manifest.json')
+const USER_CLAUDE_DIR = join(HOME, '.claude')
+const USER_CLAUDE_COMMANDS = join(USER_CLAUDE_DIR, 'commands')
+const USER_FAT_STATE = join(HOME, '.fat-stack')
+const USER_MANIFEST_PATH = join(USER_FAT_STATE, 'manifest.json')
 const COMMANDS_SRC = join(PKG_ROOT, 'commands')
 const TEMPLATES_SRC = join(PKG_ROOT, 'templates')
+
+const getInstallPaths = (scope, cwd) => {
+  if (scope === 'project') {
+    return {
+      scope: 'project',
+      claudeDir: join(cwd, '.claude'),
+      commandsDir: join(cwd, '.claude', 'commands'),
+      stateDir: join(cwd, '.fat-stack'),
+      manifestPath: join(cwd, '.fat-stack', 'manifest.json'),
+      displayCommandsDir: '.claude/commands/',
+    }
+  }
+  return {
+    scope: 'user',
+    claudeDir: USER_CLAUDE_DIR,
+    commandsDir: USER_CLAUDE_COMMANDS,
+    stateDir: USER_FAT_STATE,
+    manifestPath: USER_MANIFEST_PATH,
+    displayCommandsDir: '~/.claude/commands/',
+  }
+}
 
 const REPO_URL = 'https://github.com/rayepps/fat-stack'
 const INIT_CONFIG_DOC = `${REPO_URL}/blob/main/docs/init-config.md`
@@ -40,6 +61,13 @@ const SCHEMA = {
     default: 'auto',
     summary: 'Whether this is a new (greenfield) or existing project.',
     detail: 'Greenfield scaffolds CLAUDE.md + .gitignore and expects an empty cwd. Existing installs skills into a project that already has code. Auto detects based on cwd contents.',
+  },
+  installScope: {
+    flag: '--install-scope',
+    values: ['user', 'project'],
+    default: 'user',
+    summary: 'Install skills to the user (~/.claude) or the project (.claude) directory.',
+    detail: 'User scope installs to ~/.claude/commands/ and makes the skills available everywhere (convenient for personal workflows). Project scope installs to .claude/commands/ inside the cwd so the skills can be committed and shared with a team. Re-running with a different scope does not remove the other scope\'s install — uninstall each separately.',
   },
   installCodexMcp: {
     flag: '--install-codex-mcp',
@@ -107,19 +135,19 @@ const fail = (msg) => {
 }
 
 // ─── manifest ──────────────────────────────────────────────────
-const readManifest = () => {
-  if (!existsSync(MANIFEST_PATH)) return { version: null, installed: [] }
-  return JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'))
+const readManifest = (manifestPath) => {
+  if (!existsSync(manifestPath)) return { version: null, installed: [] }
+  return JSON.parse(readFileSync(manifestPath, 'utf8'))
 }
 
-const writeManifest = (manifest) => {
-  if (!existsSync(FAT_STATE)) mkdirSync(FAT_STATE, { recursive: true })
-  writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2))
+const writeManifest = (paths, manifest) => {
+  if (!existsSync(paths.stateDir)) mkdirSync(paths.stateDir, { recursive: true })
+  writeFileSync(paths.manifestPath, JSON.stringify(manifest, null, 2))
 }
 
 // ─── skills ────────────────────────────────────────────────────
-const removeManifestSkills = () => {
-  const manifest = readManifest()
+const removeManifestSkills = (paths) => {
+  const manifest = readManifest(paths.manifestPath)
   for (const entry of manifest.installed) {
     if (existsSync(entry.path)) rmSync(entry.path)
   }
@@ -130,13 +158,13 @@ const listSkillSources = () => {
   return files.map((f) => ({ file: f, name: f.replace(/\.md$/, '') }))
 }
 
-const installSkills = (skillPrefix) => {
-  if (!existsSync(CLAUDE_DIR)) {
-    fail(`Claude Code config directory not found at ${CLAUDE_DIR}. Install Claude Code first: https://docs.anthropic.com/en/docs/claude-code`)
+const installSkills = (skillPrefix, paths) => {
+  if (paths.scope === 'user' && !existsSync(paths.claudeDir)) {
+    fail(`Claude Code config directory not found at ${paths.claudeDir}. Install Claude Code first: https://docs.anthropic.com/en/docs/claude-code`)
   }
-  if (!existsSync(CLAUDE_COMMANDS)) mkdirSync(CLAUDE_COMMANDS, { recursive: true })
+  if (!existsSync(paths.commandsDir)) mkdirSync(paths.commandsDir, { recursive: true })
 
-  removeManifestSkills()
+  removeManifestSkills(paths)
   const sources = listSkillSources()
   const installed = []
   for (const { file, name } of sources) {
@@ -144,13 +172,14 @@ const installSkills = (skillPrefix) => {
     const alreadyPrefixed = name.startsWith('fat-')
     const destName = skillPrefix === 'yes' && !alreadyPrefixed ? `fat-stack-${file}` : file
     const displayName = skillPrefix === 'yes' && !alreadyPrefixed ? `fat-stack-${name}` : name
-    const destPath = join(CLAUDE_COMMANDS, destName)
+    const destPath = join(paths.commandsDir, destName)
     writeFileSync(destPath, readFileSync(join(COMMANDS_SRC, file), 'utf8'))
     installed.push({ name: displayName, path: destPath })
   }
-  writeManifest({
+  writeManifest(paths, {
     version: PKG.version,
     installedAt: new Date().toISOString(),
+    scope: paths.scope,
     skillPrefix,
     installed,
   })
@@ -405,7 +434,7 @@ const printAgentGuide = () => {
   log('## When you re-invoke')
   log()
   log('The CLI will:')
-  log('  1. Install skills to ~/.claude/commands/.')
+  log('  1. Install skills to ~/.claude/commands/ (user scope, default) or ./.claude/commands/ (project scope).')
   log('  2. If --project-mode=greenfield (or auto-detected): scaffold CLAUDE.md + .gitignore from templates.')
   log('  3. Run `fat-docs init` to register the docs MCP and scaffold docs/ (idempotent).')
   log('  4. Seed the pattern packs selected via --patterns under `docs/technical/patterns/<pack>/` (detect-and-skip per file).')
@@ -437,6 +466,14 @@ const printAgentGuide = () => {
   log('- **--project-mode** _(auto-decide)_ — The CLI auto-detects from cwd contents. Mention')
   log('  what it detected ("looks like an existing project / empty directory") and move on.')
   log('  Only ask if detection seems wrong.')
+  log('- **--install-scope** — Ask. Where do the skill files live?')
+  log('    - `user` (default) — installs to `~/.claude/commands/`. Skills are available in every')
+  log('      Claude Code session on this machine. Best for personal use.')
+  log('    - `project` — installs to `./.claude/commands/` inside the project. Skills can be')
+  log('      committed to the repo and shared with a team. Best when the user wants to pin a')
+  log('      fat-stack version to the repo or share the workflow.')
+  log('  Recommend `user` unless the user mentions a team, sharing, or version-pinning. Mention')
+  log('  that they can re-run init in a project with `--install-scope project` later.')
   log('- **--install-codex-mcp** _(detect before asking)_ — Check whether Codex is already')
   log('  installed before prompting. Signals (any one is enough):')
   log('    - `which codex` returns a path (Codex CLI on PATH)')
@@ -471,6 +508,7 @@ const printAgentGuide = () => {
   log('  | Decision | Recommendation | Why |')
   log('  | --- | --- | --- |')
   log('  | Project mode | `auto` (detected: existing) | Your cwd has code already. |')
+  log('  | Install scope | `user` | Skills available in every project; no repo noise. Choose `project` to share with a team. |')
   log('  | Codex second-opinion reviewer | `yes` | High-leverage, catches bugs Claude alone misses. |')
   log('  | Pattern packs | `global,typescript` | Stack-agnostic rules + your TS stack. |')
   log('  | Overwrite CLAUDE.md | n/a | No existing file. |')
@@ -524,6 +562,12 @@ const runInteractive = async () => {
       : await askChoice('Project mode?', ['greenfield', 'existing'], detected)
     log()
 
+    log('Install scope:')
+    log('  user    — ~/.claude/commands/ (available in every project on this machine)')
+    log('  project — ./.claude/commands/ (committed to the repo, shared with the team)')
+    const installScope = await askChoice('Install skills where?', ['user', 'project'], 'user')
+    log()
+
     const codex = await askYesNo(
       'Install OpenAI Codex as an optional second-opinion reviewer MCP? (useful for /deep-review)',
       'no',
@@ -549,7 +593,7 @@ const runInteractive = async () => {
     log()
 
     rl.close()
-    runInit({ projectMode, installCodexMcp: codex, overwriteClaudeMd, skillPrefix: 'no', patterns })
+    runInit({ projectMode, installScope, installCodexMcp: codex, overwriteClaudeMd, skillPrefix: 'no', patterns })
   } finally {
     rl.close()
   }
@@ -560,19 +604,21 @@ const runInit = (flags) => {
   const cwd = process.cwd()
   const config = withDefaults(flags)
   const mode = resolveProjectMode(cwd, config.projectMode)
+  const paths = getInstallPaths(config.installScope, cwd)
 
   const patternPacks = resolvePatternPacks(config.patterns)
 
   log(`fat-stack v${PKG.version} — init`)
   log(`  project-mode:         ${mode}${config.projectMode === 'auto' ? ' (detected)' : ''}`)
+  log(`  install-scope:        ${config.installScope}`)
   log(`  install-codex-mcp:    ${config.installCodexMcp}`)
   log(`  overwrite-claude-md:  ${config.overwriteClaudeMd}`)
   log(`  skill-prefix:         ${config.skillPrefix}`)
   log(`  patterns:             ${patternPacks.length === 0 ? 'none' : patternPacks.join(', ')}`)
   log()
 
-  log(`Installing skills to ${CLAUDE_COMMANDS}...`)
-  const skills = installSkills(config.skillPrefix)
+  log(`Installing skills to ${paths.commandsDir}...`)
+  const skills = installSkills(config.skillPrefix, paths)
   log(`  installed ${skills.length} skills`)
   log()
 
@@ -590,16 +636,16 @@ const runInit = (flags) => {
   const codexStatus = config.installCodexMcp === 'yes' ? installCodex(cwd) : 'not-requested'
   if (config.installCodexMcp === 'yes') log()
 
-  printReturnPrompt({ mode, skills, docsStatus, patternsResult, codexStatus, cwd })
+  printReturnPrompt({ mode, skills, docsStatus, patternsResult, codexStatus, cwd, paths })
 }
 
-const printReturnPrompt = ({ mode, skills, docsStatus, patternsResult, codexStatus, cwd }) => {
+const printReturnPrompt = ({ mode, skills, docsStatus, patternsResult, codexStatus, cwd, paths }) => {
   const names = skills.map((s) => `/${s.name}`).join(', ')
   log('─────────────────────────────────────────────────────────────')
   log()
   log(`# fat-stack installed — ${mode} project`)
   log()
-  log(`Version ${PKG.version}. ${skills.length} skills installed to \`~/.claude/commands/\`:`)
+  log(`Version ${PKG.version}. ${skills.length} skills installed to \`${paths.displayCommandsDir}\` (${paths.scope} scope):`)
   log()
   log(names)
   log()
@@ -642,12 +688,9 @@ const printReturnPrompt = ({ mode, skills, docsStatus, patternsResult, codexStat
 }
 
 // ─── commands ──────────────────────────────────────────────────
-const runUninstall = () => {
-  const manifest = readManifest()
-  if (manifest.installed.length === 0) {
-    log('Nothing to uninstall.')
-    return
-  }
+const uninstallFromManifest = (paths) => {
+  const manifest = readManifest(paths.manifestPath)
+  if (manifest.installed.length === 0) return 0
   let removed = 0
   for (const entry of manifest.installed) {
     if (existsSync(entry.path)) {
@@ -655,8 +698,60 @@ const runUninstall = () => {
       removed += 1
     }
   }
-  if (existsSync(MANIFEST_PATH)) rmSync(MANIFEST_PATH)
-  log(`Removed ${removed} skill files. Project-level files (CLAUDE.md, .mcp.json) left alone.`)
+  if (existsSync(paths.manifestPath)) rmSync(paths.manifestPath)
+  return removed
+}
+
+const runUninstall = (argv) => {
+  const scopeValues = ['user', 'project', 'all']
+  let requested = null
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--scope') {
+      const value = argv[++i]
+      if (!scopeValues.includes(value)) {
+        fail(`Invalid value for --scope: ${value} (expected one of ${scopeValues.join(', ')})`)
+      }
+      requested = value
+    }
+  }
+
+  const cwd = process.cwd()
+  const projectPaths = getInstallPaths('project', cwd)
+  const userPaths = getInstallPaths('user', cwd)
+  const projectHad = existsSync(projectPaths.manifestPath)
+  const userHad = existsSync(userPaths.manifestPath)
+
+  // Auto-detect: project if cwd has one, else user. Explicit --scope overrides.
+  const targets = (() => {
+    if (requested === 'all') return ['project', 'user']
+    if (requested === 'project') return ['project']
+    if (requested === 'user') return ['user']
+    if (projectHad) return ['project']
+    if (userHad) return ['user']
+    return []
+  })()
+
+  if (targets.length === 0) {
+    log('Nothing to uninstall.')
+    return
+  }
+
+  let total = 0
+  for (const scope of targets) {
+    const paths = scope === 'project' ? projectPaths : userPaths
+    if (!existsSync(paths.manifestPath)) {
+      log(`No ${scope}-scope install found${scope === 'project' ? ` in ${cwd}` : ''}.`)
+      continue
+    }
+    const removed = uninstallFromManifest(paths)
+    log(`Removed ${removed} skill files from ${paths.displayCommandsDir} (${scope} scope).`)
+    total += removed
+  }
+
+  if (projectHad && userHad && requested === null) {
+    log(`A ${targets[0] === 'project' ? 'user' : 'project'}-scope install also exists — pass \`--scope all\` or \`--scope ${targets[0] === 'project' ? 'user' : 'project'}\` to remove it too.`)
+  }
+  log(`Total: ${total} files removed. Project-level CLAUDE.md / .mcp.json / docs/ left alone.`)
 }
 
 const runHelp = () => {
@@ -667,11 +762,13 @@ const runHelp = () => {
   log('  npx fat-stack@latest init --agent        Print agent-mode guide and exit.')
   log('  npx fat-stack@latest init --agent \\     Execute init with the given config.')
   log('    --project-mode greenfield|existing|auto \\')
+  log('    --install-scope user|project \\')
   log('    --install-codex-mcp yes|no \\')
   log('    --overwrite-claude-md no|yes \\')
   log('    --skill-prefix no|yes \\')
   log('    --patterns default|none|all|<csv of: global,typescript,database,frontend,react>')
   log('  npx fat-stack@latest uninstall           Remove skills fat-stack installed.')
+  log('    --scope user|project|all               Which install to remove (default: project if present in cwd, else user).')
   log('  npx fat-stack@latest --version           Print version.')
   log('  npx fat-stack@latest --help              Print this help.')
   log()
@@ -683,7 +780,7 @@ const main = async () => {
   const argv = process.argv.slice(2)
   const cmd = argv[0]
 
-  if (cmd === 'uninstall') return runUninstall()
+  if (cmd === 'uninstall') return runUninstall(argv.slice(1))
   if (cmd === '--version' || cmd === '-v') return log(PKG.version)
   if (cmd === '--help' || cmd === '-h' || cmd === 'help') return runHelp()
 

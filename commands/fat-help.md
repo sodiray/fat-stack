@@ -63,5 +63,5 @@ Match the conversation to the closest case. Pick one recommendation. If there's 
 - Recommend **one** skill per response unless there's a genuine branch. Picking is more useful than listing.
 - Explain *why* that skill is the right next step in one sentence. Don't lecture.
 - Slash commands dispatch from user messages, so do not invoke the recommended skill yourself. Tell the user to type it.
-- If the user asks "what does `/X` do," answer from the skill reference above. If they want more detail, point them at `~/.claude/commands/X.md`.
+- If the user asks "what does `/X` do," answer from the skill reference above. If they want more detail, point them at the installed skill file — either `~/.claude/commands/X.md` (user-scope install) or `.claude/commands/X.md` in the project (project-scope install).
 - Do not editorialize about fat-stack's methodology. Describe it, don't sell it.

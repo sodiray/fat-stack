@@ -94,6 +94,8 @@ The loop is the mechanism. The full methodology — what should and shouldn't li
 
 Skills install as flat slash commands by default (`/dev`, not `/fat-stack:dev`). `/fat-help` is the one exception — always prefixed to avoid colliding with Claude Code's built-in `/help`. Opt into prefixing the rest via `--skill-prefix=yes`.
 
+By default skills install to `~/.claude/commands/` (user scope) so they're available in every project on your machine. Pass `--install-scope=project` to install to `./.claude/commands/` instead — useful for committing the skills to a repo and sharing them with a team. See [`docs/init-config.md`](./docs/init-config.md#--install-scope).
+
 ## Dependencies
 
 fat-stack's document-first loop depends on the project having a `docs/` tree split into `docs/product/` and `docs/technical/`, plus a searchable index. That's what **[fat-docs](https://github.com/rayepps/fat-docs)** provides. The `fat-stack init` CLI runs `fat-docs init` for you.

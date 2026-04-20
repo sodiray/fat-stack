@@ -29,6 +29,33 @@ Tells fat-stack whether you're installing into a new project or an existing one.
 
 ---
 
+## `--install-scope`
+
+**Values:** `user` | `project`
+**Default:** `user`
+
+Controls where the skill files live.
+
+- **`user`** *(default)* — installs skills to `~/.claude/commands/` and tracks them in `~/.fat-stack/manifest.json`. The skills are available in every Claude Code session on this machine. This is the right default for personal use: one fat-stack install, every project sees it.
+- **`project`** — installs skills to `./.claude/commands/` inside the current working directory and tracks them in `./.fat-stack/manifest.json`. Claude Code loads project-level skills alongside user-level ones, so the skills only activate inside this project. Commit `.claude/commands/` to the repo to share the exact skill set (and fat-stack version) with a team.
+
+**Why pick `project`:**
+
+- **Sharing with a team.** Every contributor gets the same skills without each running `fat-stack init` locally.
+- **Pinning a fat-stack version to a repo.** `user` scope is whatever version you installed last globally; `project` scope is whatever version committed the files.
+- **Multiple fat-stack versions on one machine.** Different projects can run different versions side by side.
+
+**Why stick with `user`:**
+
+- **No repo noise.** `.claude/commands/` is fifteen markdown files; some teams don't want that in the tree.
+- **Solo use.** If you're the only one using fat-stack, a single user-level install is simpler — one copy to keep up to date.
+
+**Uninstall:** `npx fat-stack@latest uninstall` removes a single install by default — project-scope if the cwd has one, otherwise user-scope. When both exist, it removes the project-scope install and warns you that a user-scope install is still present. Pass `--scope user|project|all` to target a specific install explicitly.
+
+**Re-running with a different scope:** re-running `init` only touches the scope you specify. Switching from `user` to `project` does **not** remove the user-scope install — both coexist until you `uninstall` them. This is deliberate so that switching scopes doesn't silently throw away an existing install.
+
+---
+
 ## `--install-codex-mcp`
 
 **Values:** `yes` | `no`
