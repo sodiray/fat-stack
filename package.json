@@ -1,0 +1,40 @@
+{
+  "name": "fat-stack",
+  "version": "0.1.0",
+  "description": "Fully Aligned Tooling — opinionated Claude Code skills for a document-first engineering workflow.",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "ai",
+    "workflow",
+    "documentation"
+  ],
+  "homepage": "https://github.com/rayepps/fat-stack",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rayepps/fat-stack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rayepps/fat-stack/issues"
+  },
+  "license": "MIT",
+  "author": "Ray Epps",
+  "type": "module",
+  "bin": {
+    "fat-stack": "bin/init.js"
+  },
+  "files": [
+    "bin/",
+    "commands/",
+    "templates/",
+    "docs/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
