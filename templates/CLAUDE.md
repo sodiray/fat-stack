@@ -32,7 +32,7 @@ If you're not sure where you are in the loop or what to run next, start with `/f
 | `/research-gaps` | Turn gaps between documentation and implementation into reviewable follow-ups. |
 | `/research-open-questions` | Surface every unresolved question blocking the current work. |
 | `/improve-plan` | Refine the current plan with the three refinement passes. |
-| `/check-launch-ready` | Determine whether the implementation is ready for end-to-end user testing. |
+| `/research-launch-gaps` | Determine whether the implementation is ready for end-to-end user testing. |
 | `/ensure-docs-consistent` | Reconcile documentation consistency across the whole docs directory. |
 | `/product` | Product advisor mode. |
 | `/eng` | Founding-engineer advisor mode. |

@@ -33,7 +33,7 @@ Then go back to step 1 for the next feature or change. `docs/product/` is the so
 - **`/research-gaps`** — turn gaps between docs and implementation into reviewable follow-ups.
 - **`/research-open-questions`** — surface every unresolved question blocking current work.
 - **`/improve-plan`** — refine the current plan with three refinement passes.
-- **`/check-launch-ready`** — determine whether the implementation is ready for end-to-end testing.
+- **`/research-launch-gaps`** — determine whether the implementation is ready for end-to-end testing.
 - **`/ensure-docs-consistent`** — reconcile documentation consistency across the whole `docs/` directory after a change.
 - **`/product`** — product advisor mode. Ask hard product questions.
 - **`/eng`** — founding-engineer advisor mode. Ask hard engineering questions.
@@ -54,7 +54,7 @@ Match the conversation to the closest case. Pick one recommendation. If there's 
 - **`/deep-review` flagged gaps between docs and code.** → `/research-gaps` to turn them into follow-ups.
 - **Stuck on a decision.** → `/research-open-questions` to surface everything unresolved, then `/eng` or `/product` for an opinion on the hard ones.
 - **About to start building, plan feels shaky.** → `/improve-plan`.
-- **Finished implementing, ready to hand to end-to-end testing.** → `/check-launch-ready`.
+- **Finished implementing, ready to hand to end-to-end testing.** → `/research-launch-gaps`.
 - **New teammate or returning after a break.** → `/study`.
 - **User says "I don't know what to do next" and no task is clear.** → Show the full skill reference and ask: "Where are you — kicking off, writing docs, implementing, reviewing, or debugging?"
 

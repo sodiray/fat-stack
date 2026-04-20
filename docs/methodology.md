@@ -75,7 +75,7 @@ Derive a concrete implementation plan from the docs. Claude proposes the plan; y
 
 Claude reads the relevant docs and patterns and writes the code. You're reviewing at the decision layer — "does this pattern still hold?", "is this detail in the right doc?" — not at the line layer.
 
-**Done when:** the code runs, the relevant tests pass, and `/check-launch-ready` gives the go-ahead.
+**Done when:** the code runs, the relevant tests pass, and `/research-launch-gaps` gives the go-ahead.
 
 ### 5. Gap analysis — `/deep-review`
 
@@ -130,7 +130,7 @@ Once the docs describe what you want, the skills automate the rest:
 2. `/dev` — implement the plan.
 3. `/deep-review` — find gaps between docs and what was built.
 4. `/research-gaps` — turn gaps into concrete follow-ups.
-5. `/check-launch-ready` — verify the feature is ready for end-to-end testing.
+5. `/research-launch-gaps` — verify the feature is ready for end-to-end testing.
 
 You can run this chain with minimal code reading. You're signing off on whether gaps are acceptable, whether the plan looks right, whether the behavior described in the docs is what you want. You're not writing loops or fixing types.
 

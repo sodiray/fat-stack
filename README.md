@@ -86,7 +86,7 @@ The loop is the mechanism. The full methodology — what should and shouldn't li
 | `/research-gaps` | Turn gaps between documentation and implementation into reviewable follow-ups. |
 | `/research-open-questions` | Surface every unresolved question blocking current work. |
 | `/improve-plan` | Refine the current plan with three refinement passes. |
-| `/check-launch-ready` | Determine whether the implementation is ready for end-to-end user testing. |
+| `/research-launch-gaps` | Determine whether the implementation is ready for end-to-end user testing. |
 | `/ensure-docs-consistent` | Reconcile documentation consistency across the whole docs directory. |
 | `/product` | Product advisor mode. |
 | `/eng` | Founding-engineer advisor mode. |
