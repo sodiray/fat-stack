@@ -1,6 +1,6 @@
 {
   "name": "fat-stack",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Fully Aligned Tooling — opinionated Claude Code skills for a document-first engineering workflow.",
   "keywords": [
     "claude-code",
